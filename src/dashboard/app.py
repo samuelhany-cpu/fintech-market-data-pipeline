@@ -331,6 +331,6 @@ with tab_runs:
                             "duration_sec", "error_message"]].copy()
         display.columns = ["Run ID", "Pipeline", "Status", "Started At", "Duration (s)", "Error"]
         st.dataframe(
-            display.style.applymap(_style_run, subset=["Status"]),
+            display.style.map(_style_run, subset=["Status"]),
             use_container_width=True, hide_index=True,
         )
