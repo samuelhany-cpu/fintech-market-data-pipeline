@@ -35,7 +35,7 @@ class AlphaVantageExtractor(MarketDataExtractor):
             params={
                 "function": "TIME_SERIES_DAILY",
                 "symbol": symbol,
-                "outputsize": "full",
+                "outputsize": "compact",  # free tier: last 100 trading days
                 "apikey": self.api_key,
             },
             timeout=30,

@@ -22,7 +22,7 @@ def load_raw_payload(
                 INSERT INTO raw_market_payloads
                     (symbol_id, pipeline_run_id, source_name, from_date, to_date, payload)
                 VALUES
-                    (:symbol_id, :pipeline_run_id, :source_name, :from_date, :to_date, :payload::jsonb)
+                    (:symbol_id, :pipeline_run_id, :source_name, :from_date, :to_date, cast(:payload as jsonb))
             """),
             {
                 "symbol_id": symbol_id,

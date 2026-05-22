@@ -79,7 +79,7 @@ class DataQualityRunner:
                         INSERT INTO data_quality_results
                             (pipeline_run_id, check_name, table_name, status, failed_count, details)
                         VALUES
-                            (:run_id, :check_name, :table_name, :status, :failed_count, :details::jsonb)
+                            (:run_id, :check_name, :table_name, :status, :failed_count, cast(:details as jsonb))
                     """),
                     {
                         "run_id": pipeline_run_id,
