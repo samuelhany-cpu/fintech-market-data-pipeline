@@ -39,6 +39,18 @@ def load_symbols() -> list[str]:
 
 
 @st.cache_data(ttl=60)
+def load_data_range() -> tuple[pd.Timestamp, pd.Timestamp]:
+    with engine.connect() as conn:
+        row = conn.execute(
+            text("SELECT MIN(trade_date), MAX(trade_date) FROM stg_market_prices")
+        ).fetchone()
+    if row and row[0]:
+        return pd.Timestamp(row[0]), pd.Timestamp(row[1])
+    today = pd.Timestamp.today().normalize()
+    return today - pd.DateOffset(months=6), today
+
+
+@st.cache_data(ttl=60)
 def load_staging(symbol: str, start: str, end: str) -> pd.DataFrame:
     sql = text("""
         SELECT s.symbol, p.trade_date,
@@ -118,11 +130,12 @@ with st.sidebar:
         st.stop()
 
     selected_symbol = st.selectbox("Symbol", symbols)
+    db_start, db_end = load_data_range()
     col1, col2 = st.columns(2)
     with col1:
-        start_date = st.date_input("From", value=pd.Timestamp("2024-01-01"))
+        start_date = st.date_input("From", value=db_start, min_value=db_start, max_value=db_end)
     with col2:
-        end_date = st.date_input("To", value=pd.Timestamp("2024-12-31"))
+        end_date = st.date_input("To", value=db_end, min_value=db_start, max_value=db_end)
 
     st.divider()
     st.markdown("**Source:** Alpha Vantage")

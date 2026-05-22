@@ -8,14 +8,13 @@ Usage:
 import argparse
 import logging
 import sys
-import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from sqlalchemy import text
 
 from src.db.engine import engine
 from src.db.init_db import init_db
-from src.extract.alphavantage import AlphaVantageExtractor
+from src.extract.yfinance_extractor import YFinanceExtractor
 from src.load.raw_loader import load_raw_payload
 from src.load.staging_loader import upsert_staging, upsert_symbol
 from src.quality.runner import DataQualityRunner
@@ -28,9 +27,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-SOURCE_NAME = "alphavantage"
-# Alpha Vantage free tier: 5 requests/minute -> pause 13s between requests.
-_API_DELAY_SECONDS = 13
+SOURCE_NAME = "yfinance"
 
 
 def _create_pipeline_run(pipeline_name: str) -> str:
@@ -61,7 +58,7 @@ def _finish_pipeline_run(run_id: str, status: str, error: str | None = None) -> 
 
 
 def _ingest_symbol(
-    extractor: AlphaVantageExtractor,
+    extractor: YFinanceExtractor,
     symbol: str,
     start_date: str,
     end_date: str,
@@ -82,17 +79,14 @@ def run_pipeline(symbols: list[str], start_date: str, end_date: str) -> None:
     total_rows = 0
     errors: list[str] = []
 
-    extractor = AlphaVantageExtractor()
+    extractor = YFinanceExtractor()
 
-    # Concurrent extraction with rate-limit delay between submit calls.
-    # DB writes are safe: upsert handles conflicts and each symbol occupies distinct rows.
-    with ThreadPoolExecutor(max_workers=min(len(symbols), 3)) as pool:
-        futures = {}
-        for i, symbol in enumerate(symbols):
-            if i > 0:
-                time.sleep(_API_DELAY_SECONDS)
-            future = pool.submit(_ingest_symbol, extractor, symbol, start_date, end_date, run_id)
-            futures[future] = symbol
+    # Concurrent extraction — yfinance has no rate limit so all symbols run in parallel.
+    with ThreadPoolExecutor(max_workers=min(len(symbols), 5)) as pool:
+        futures = {
+            pool.submit(_ingest_symbol, extractor, symbol, start_date, end_date, run_id): symbol
+            for symbol in symbols
+        }
 
         for future in as_completed(futures):
             symbol = futures[future]
