@@ -26,7 +26,7 @@ st.set_page_config(
 )
 
 st.title("📈 Fintech Market Data Pipeline")
-st.caption("Real-time analytics powered by Alpha Vantage → PostgreSQL")
+st.caption("End-of-day analytics powered by yfinance → PostgreSQL")
 
 
 # ─── Data loaders ────────────────────────────────────────────────────────────
@@ -138,7 +138,7 @@ with st.sidebar:
         end_date = st.date_input("To", value=db_end, min_value=db_start, max_value=db_end)
 
     st.divider()
-    st.markdown("**Source:** Alpha Vantage")
+    st.markdown("**Source:** yfinance")
     st.markdown("**DB:** PostgreSQL 16")
 
 start_str = str(start_date)

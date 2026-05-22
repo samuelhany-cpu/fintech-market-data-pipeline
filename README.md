@@ -6,7 +6,7 @@
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
-A production-style data engineering pipeline that ingests real market data from **Alpha Vantage**, stores raw and transformed records in **PostgreSQL**, runs automated data quality checks, and exposes an interactive **Streamlit** analytics dashboard.
+A production-style data engineering pipeline that ingests real market data from **yfinance** (Yahoo Finance), stores raw and transformed records in **PostgreSQL**, runs automated data quality checks, and exposes an interactive **Streamlit** analytics dashboard.
 
 ---
 
@@ -26,11 +26,11 @@ A production-style data engineering pipeline that ingests real market data from 
 ## Architecture
 
 ```
-Alpha Vantage API
+yfinance (Yahoo Finance)
       │
       ▼
 ┌─────────────────┐
-│  Extract Layer  │  AlphaVantageExtractor — TIME_SERIES_DAILY, tenacity retry
+│  Extract Layer  │  YFinanceExtractor — free, no API key, full history
 └────────┬────────┘
          │ raw JSON payload
          ▼
@@ -67,7 +67,7 @@ Alpha Vantage API
 |---|---|
 | `symbols` | Master list of tracked tickers |
 | `pipeline_runs` | One record per execution, tracks status + duration |
-| `raw_market_payloads` | Full Alpha Vantage JSON response stored as JSONB |
+| `raw_market_payloads` | Full yfinance response metadata stored as JSONB |
 | `stg_market_prices` | Normalized OHLCV rows, unique on `(symbol_id, trade_date)` |
 | `mart_daily_symbol_metrics` | Daily return, MA7, MA30, 30d volatility, volume change |
 | `data_quality_results` | Per-check results linked to each pipeline run |
@@ -111,7 +111,7 @@ duplicate_symbol_date             PASS          0
 | Database | PostgreSQL 16 |
 | DB Access | SQLAlchemy 2.0 + psycopg3 |
 | Data Processing | pandas |
-| Market Data | Alpha Vantage (`TIME_SERIES_DAILY`) |
+| Market Data | yfinance (Yahoo Finance, free, no API key) |
 | Retry Logic | tenacity |
 | Config | pydantic-settings |
 | Dashboard | Streamlit + Plotly |
@@ -129,10 +129,8 @@ duplicate_symbol_date             PASS          0
 git clone https://github.com/samuelhany-cpu/fintech-market-data-pipeline.git
 cd fintech-market-data-pipeline
 cp .env.example .env
-# Edit .env and set your ALPHAVANTAGE_API_KEY
+# No API key needed — yfinance is completely free
 ```
-
-Get a free key at [alphavantage.co](https://www.alphavantage.co/).
 
 ### 2. Start PostgreSQL
 
@@ -149,11 +147,10 @@ pip install -r requirements.txt
 ### 4. Run the pipeline
 
 ```bash
-python -m src.pipeline --symbols AAPL MSFT TSLA --start 2024-01-01 --end 2024-12-31
+python -m src.pipeline --symbols AAPL MSFT TSLA --start 2024-01-01 --end 2026-05-22
 ```
 
-> **Note:** The free Alpha Vantage tier allows 5 requests/minute.
-> The pipeline waits 13 s between symbols — 3 symbols ≈ 45 s total.
+> **yfinance is free with no API key and no rate limits.** All symbols are fetched in parallel — 3 symbols in ~6 seconds.
 
 ### 5. Launch the dashboard
 
@@ -172,17 +169,16 @@ pytest tests/ -v --cov=src
 
 ## Concurrency Design
 
-The pipeline uses `ThreadPoolExecutor` with up to 3 workers for concurrent per-symbol extraction:
+The pipeline uses `ThreadPoolExecutor` with up to 5 workers for fully parallel per-symbol extraction:
 
-- **Concurrent extraction** — each symbol fetches from the API in its own thread
-- **Sequential API pacing** — 13 s delay between `submit()` calls respects the 5 req/min limit
+- **Concurrent extraction** — all symbols fetch simultaneously, no rate-limit delays (yfinance has no API key or request caps)
 - **Idempotent upserts** — `ON CONFLICT (symbol_id, trade_date) DO UPDATE` prevents duplicate rows even if workers race
 - **Short transactions** — extract first, load second; no locks held during HTTP calls
 
 | Mode | Symbols | Approx. Runtime |
 |---|---|---|
-| Sequential | 3 | ~60 s |
-| Concurrent (3 workers) | 3 | ~45 s |
+| Sequential | 3 | ~18 s |
+| Concurrent (5 workers) | 3 | ~6 s |
 
 ---
 
@@ -207,7 +203,7 @@ fintech-market-data-pipeline/
 │   ├── config/settings.py          # pydantic-settings env config
 │   ├── db/engine.py                # SQLAlchemy engine
 │   ├── db/init_db.py               # runs SQL migrations on startup
-│   ├── extract/alphavantage.py     # Alpha Vantage extractor + retry
+│   ├── extract/yfinance_extractor.py  # yfinance extractor (free, no key)
 │   ├── load/raw_loader.py          # JSONB payload storage
 │   ├── load/staging_loader.py      # idempotent OHLCV upsert
 │   ├── transform/mart_builder.py   # SQL window function mart
