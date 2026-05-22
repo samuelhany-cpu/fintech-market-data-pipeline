@@ -10,6 +10,14 @@ A production-style data engineering pipeline that ingests real market data from 
 
 ---
 
+## Live Demo
+
+**Streamlit dashboard:** [samuelhany-cpu-fintech-market-data-pipeline.streamlit.app](https://samuelhany-cpu-fintech-market-data-pipeline.streamlit.app)
+
+> Replace the link above with your actual Streamlit Cloud URL once deployed.
+
+---
+
 ## Dashboard Preview
 
 ### Price Chart — Candlestick + Moving Averages
@@ -30,7 +38,7 @@ yfinance (Yahoo Finance)
       │
       ▼
 ┌─────────────────┐
-│  Extract Layer  │  YFinanceExtractor — free, no API key, full history
+│  Extract Layer  │  YFinanceExtractor — no API key required, full history
 └────────┬────────┘
          │ raw JSON payload
          ▼
@@ -111,7 +119,7 @@ duplicate_symbol_date             PASS          0
 | Database | PostgreSQL 16 |
 | DB Access | SQLAlchemy 2.0 + psycopg3 |
 | Data Processing | pandas |
-| Market Data | yfinance (Yahoo Finance, free, no API key) |
+| Market Data | yfinance (Yahoo Finance, free, no API key required) |
 | Retry Logic | tenacity |
 | Config | pydantic-settings |
 | Dashboard | Streamlit + Plotly |
@@ -129,7 +137,7 @@ duplicate_symbol_date             PASS          0
 git clone https://github.com/samuelhany-cpu/fintech-market-data-pipeline.git
 cd fintech-market-data-pipeline
 cp .env.example .env
-# No API key needed — yfinance is completely free
+# No API key needed — yfinance requires no API key for portfolio/local usage
 ```
 
 ### 2. Start PostgreSQL
@@ -150,7 +158,7 @@ pip install -r requirements.txt
 python -m src.pipeline --symbols AAPL MSFT TSLA --start 2024-01-01 --end 2026-05-22
 ```
 
-> **yfinance is free with no API key and no rate limits.** All symbols are fetched in parallel — 3 symbols in ~6 seconds.
+> **yfinance requires no API key for this demo and is suitable for portfolio/local usage.** All symbols are fetched in parallel — 3 symbols in ~6 seconds.
 
 ### 5. Launch the dashboard
 
@@ -171,7 +179,7 @@ pytest tests/ -v --cov=src
 
 The pipeline uses `ThreadPoolExecutor` with up to 5 workers for fully parallel per-symbol extraction:
 
-- **Concurrent extraction** — all symbols fetch simultaneously, no rate-limit delays (yfinance has no API key or request caps)
+- **Concurrent extraction** — all symbols fetch simultaneously via `ThreadPoolExecutor` (yfinance requires no API key for this use case)
 - **Idempotent upserts** — `ON CONFLICT (symbol_id, trade_date) DO UPDATE` prevents duplicate rows even if workers race
 - **Short transactions** — extract first, load second; no locks held during HTTP calls
 
