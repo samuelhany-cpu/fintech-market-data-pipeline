@@ -298,7 +298,7 @@ with tab_quality:
         display = latest[["check_name", "table_name", "status", "failed_count"]].copy()
         display.columns = ["Check", "Table", "Status", "Failed Rows"]
         st.dataframe(
-            display.style.applymap(_style_status, subset=["Status"]),
+            display.style.map(_style_status, subset=["Status"]),
             use_container_width=True, hide_index=True,
         )
         with st.expander("Full history (last 50)"):
