@@ -20,12 +20,12 @@ from src.db.engine import engine
 
 st.set_page_config(
     page_title="Fintech Market Data Pipeline",
-    page_icon="📈",
+    page_icon=None,
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-st.title("📈 Fintech Market Data Pipeline")
+st.title("Fintech Market Data Pipeline")
 st.caption("End-of-day analytics powered by yfinance → PostgreSQL")
 
 
@@ -115,7 +115,7 @@ def load_pipeline_runs() -> pd.DataFrame:
 
 # ─── Sidebar ─────────────────────────────────────────────────────────────────
 with st.sidebar:
-    st.header("⚙️ Controls")
+    st.header("Controls")
     try:
         symbols = load_symbols()
     except Exception:
@@ -146,7 +146,7 @@ end_str = str(end_date)
 
 # ─── Tabs ────────────────────────────────────────────────────────────────────
 tab_price, tab_analytics, tab_quality, tab_runs = st.tabs(
-    ["📊 Price Chart", "📉 Analytics", "✅ Data Quality", "🔁 Pipeline Runs"]
+    ["Price Chart", "Analytics", "Data Quality", "Pipeline Runs"]
 )
 
 # ── Tab 1: Price Chart ───────────────────────────────────────────────────────
@@ -286,8 +286,8 @@ with tab_quality:
 
         c1, c2, c3 = st.columns(3)
         c1.metric("Checks Run", len(latest))
-        c2.metric("✅ Passed", (latest["status"] == "pass").sum())
-        c3.metric("❌ Failed", (latest["status"] == "fail").sum())
+        c2.metric("Passed", (latest["status"] == "pass").sum())
+        c3.metric("Failed", (latest["status"] == "fail").sum())
         st.divider()
 
         def _style_status(val: str) -> str:
@@ -315,8 +315,8 @@ with tab_runs:
         avg_dur = df_runs["duration_sec"].mean()
         r1, r2, r3, r4 = st.columns(4)
         r1.metric("Total Runs", len(df_runs))
-        r2.metric("✅ Successful", (df_runs["status"] == "success").sum())
-        r3.metric("❌ Failed", (df_runs["status"] == "failed").sum())
+        r2.metric("Successful", (df_runs["status"] == "success").sum())
+        r3.metric("Failed", (df_runs["status"] == "failed").sum())
         r4.metric("Avg Duration", f"{avg_dur:.0f}s" if pd.notna(avg_dur) else "—")
         st.divider()
 
