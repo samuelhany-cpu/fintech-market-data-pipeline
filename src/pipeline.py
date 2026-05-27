@@ -104,17 +104,18 @@ def run_pipeline(symbols: list[str], start_date: str, end_date: str) -> None:
         print(f"\n[pipeline] Run {run_id} FAILED. Errors: {errors}")
         sys.exit(1)
 
+    logger.info("[pipeline] Building analytics mart...")
+    mart_rows = build_mart()
+
     logger.info("[pipeline] Running data quality checks...")
     qr = DataQualityRunner()
     quality_results = qr.run_all(run_id)
     qr.print_report(quality_results)
 
-    if any(r.status == "fail" for r in quality_results):
+    failed = [r for r in quality_results if r.status == "fail"]
+    if failed:
         _finish_pipeline_run(run_id, "failed", "Data quality checks failed")
         sys.exit(1)
-
-    logger.info("[pipeline] Building analytics mart...")
-    mart_rows = build_mart()
 
     _finish_pipeline_run(run_id, "success")
     print(
