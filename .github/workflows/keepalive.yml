@@ -10,8 +10,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Ping Streamlit app
+        env:
+          STREAMLIT_URL: ${{ secrets.STREAMLIT_URL }}
         run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${{ secrets.STREAMLIT_URL }}")
+          if [ -z "$STREAMLIT_URL" ]; then
+            echo "STREAMLIT_URL secret is not set — skipping ping."
+            echo "Add it at: Settings → Secrets and variables → Actions → STREAMLIT_URL"
+            exit 0
+          fi
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$STREAMLIT_URL")
           echo "HTTP status: $STATUS"
           if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 400 ]; then
             echo "App is awake."
