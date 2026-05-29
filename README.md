@@ -13,9 +13,6 @@ A production-style data engineering pipeline that ingests real market data from 
 ## Live Demo
 
 **Streamlit dashboard:** [fintech-market-data-pipeline.streamlit.app](https://fintech-market-data-pipeline.streamlit.app)
-
-> Replace the link above with your actual Streamlit Cloud URL once deployed.
-
 ---
 
 ## Dashboard Preview
